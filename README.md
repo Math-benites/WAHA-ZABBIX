@@ -10,7 +10,7 @@ Ambiente Docker Compose pronto para subir Zabbix (server/web/agent + MySQL), WAH
 ## Subir rapido
 ```bash
 mkdir -p /opt/app && cd /opt/app
-git clone https://github.com/Math-benites/zabbix-server-compose-7.2.git .
+git clone https://github.com/portergroup-ti/WAHA-ZABBIX.git .
 docker compose up -d
 ```
 Checar saude:
