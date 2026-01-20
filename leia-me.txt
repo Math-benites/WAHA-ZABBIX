@@ -1,0 +1,80 @@
+Guia rapido - Stack Zabbix + WAHA + api_message_zabbix
+
+Visao geral
+- Este compose sobe Zabbix (server, web, agent, MySQL), Redis/Postgres auxiliares, o conector WAHA (WhatsApp) e o microservico api_message_zabbix que recebe webhooks do Zabbix e repassa para o WAHA.
+- O trafego de alertas deve seguir: Zabbix Media Type (Webhook) -> api_message_zabbix (porta 3000/4100) -> WAHA (porta 3000 interna, 4000 no host) -> WhatsApp.
+
+Pre-requisitos
+- Host Linux/WSL com Docker Engine 23+ e Docker Compose v2.3+.
+- Portas livres: 8080 (Zabbix web), 10051 (server), 10050 (agent), 4000 (WAHA dashboard/API), 4100 (api_message_zabbix), 6379 (Redis) e 5432 (Postgres) se forem usadas.
+- Git instalado para clonar o repositorio.
+
+Preparar variaveis
+- Os arquivos em env_vars/ trazem exemplos. Ajuste senhas nos secrets .MYSQL_* e .POSTGRES_* (um valor por arquivo) e, se quiser, personalize timezone, nome do servidor e dominios em env_vars/.env_srv e env_vars/.env_web.
+- Opcional: defina uma API key para o microservico adicionando API_KEY no servico api-message-zabbix do docker-compose.yml (e lembre de usar o mesmo valor no header X-Api-Key do Media Type).
+
+Subir o ambiente
+1) Escolha um diretorio, ex:
+   mkdir -p /opt/app && cd /opt/app
+   git clone https://github.com/Math-benites/zabbix-server-compose-7.2.git .
+2) Revise docker-compose.yml conforme necessidade e confirme portas desejadas.
+3) Suba tudo:
+   docker compose up -d
+4) Verifique se todos os containers estao saudaveis:
+   docker compose ps
+
+Acessos rapidos
+- Zabbix Frontend: http://SEU_HOST:8080 (login padrao Zabbix: Admin / zabbix).
+- WAHA dashboard e API: http://SEU_HOST:4000 (habilite uma sessao chamada "default" e faça o pareamento com o WhatsApp).
+- api_message_zabbix healthcheck: http://SEU_HOST:4100/health
+
+Configurar o WAHA
+1) Abra http://SEU_HOST:4000.
+2) Crie ou edite a sessao "default" (nome deve bater com WAHA_SESSION do compose).
+3) Faça o scan do QR Code e confirme que o status da sessao fica como CONNECTED.
+
+Configurar o Media Type no Zabbix
+1) Em Administration -> Media types -> Create media type.
+2) Tipo: Webhook. Nome sugerido: WAHA WhatsApp.
+3) Parametros:
+   - url: http://api-message-zabbix:3000/send   (este host/porta sao internos ao compose)
+   - to: {ALERT.SENDTO}
+   - text: {ALERT.SUBJECT}\n{ALERT.MESSAGE}
+   - api_key: (preencha somente se API_KEY estiver configurado no compose)
+4) Script (JavaScript) do webhook:
+   var params = value;
+   if (typeof params === 'string') { try { params = JSON.parse(params); } catch (e) { params = {}; } }
+   var url = params.url || 'http://api-message-zabbix:3000/send';
+   var to = (params.to || '').replace(/\D/g, '');
+   var text = params.text || '';
+   var body = { to: to, text: text };
+   var req = new HttpRequest();
+   req.addHeader('Content-Type', 'application/json');
+   if (params.api_key) { req.addHeader('X-Api-Key', params.api_key); }
+   var resp = req.post(url, JSON.stringify(body));
+   var status = req.getStatus();
+   if (status !== 200) { throw 'request failed status=' + status + ' body=' + resp; }
+   return 'OK';
+5) Crie um user media para o usuario que recebera alertas:
+   Administration -> Users -> escolha o usuario -> Media -> Add -> Type: WAHA WhatsApp, Send to: somente digitos do telefone (DDD+numero), Enabled.
+6) Amarre em uma Action (Monitoring -> Actions) para os triggers desejados.
+
+Testar o fluxo
+- Teste o microservico direto do host:
+  curl -X POST "http://SEU_HOST:4100/send?to=5599999999999&text=teste"
+- Teste de dentro do zabbix-server (usa rede interna):
+  docker compose exec zabbix-server curl -X POST "http://api-message-zabbix:3000/send" -H "Content-Type: application/json" -d "{\"to\":\"5599999999999\",\"text\":\"teste\"}"
+- Dispare um trigger de teste no Zabbix e confirme recebimento no WhatsApp.
+
+Erros comuns e como corrigir
+- Sessao WAHA desconectada: refaca o scan do QR Code em http://SEU_HOST:4000 e confirme status CONNECTED.
+- Falha 401 no webhook: configure a mesma API_KEY no docker-compose.yml (api-message-zabbix) e no parametro api_key do Media Type.
+- Falha 5xx no api_message_zabbix: use docker compose logs -f api-message-zabbix e verifique se o WAHA esta respondendo em http://waha:3000/api/sendText.
+- Mensagem nao chega: confira se o telefone esta somente com digitos (sem +, espacos ou parenteses) e se o numero esta registrado no WhatsApp.
+
+Manutencao rapida
+- Subir/derrubar: docker compose up -d / docker compose down
+- Logs em tempo real:
+  docker compose logs -f zabbix-server
+  docker compose logs -f api-message-zabbix
+  docker compose logs -f waha

@@ -1,0 +1,93 @@
+import http from 'http';
+import { URL } from 'url';
+import axios from 'axios';
+
+const PORT = process.env.PORT || 3000;
+const WAHA_URL = process.env.WAHA_URL || 'http://waha:3000/api/sendText';
+const WAHA_SESSION = process.env.WAHA_SESSION || 'default';
+const API_KEY = process.env.API_KEY; // optional shared secret
+
+function sendJson(res, status, obj) {
+  const data = JSON.stringify(obj);
+  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.end(data);
+}
+
+async function handleSend(req, res, query, bodyStr) {
+  if (API_KEY) {
+    const hdr = req.headers['x-api-key'];
+    if (!hdr || hdr !== API_KEY) {
+      return sendJson(res, 401, { error: 'unauthorized' });
+    }
+  }
+
+  let to = (query.get('to') || '').toString();
+  let text = (query.get('text') || '').toString();
+
+  if ((!to || !text) && bodyStr) {
+    try {
+      const bodyObj = JSON.parse(bodyStr);
+      if (!to && bodyObj.to) to = String(bodyObj.to);
+      if (!text && bodyObj.text) text = String(bodyObj.text);
+    } catch (_) {
+      // ignore JSON parse errors
+    }
+  }
+
+  if (!to || !text) {
+    return sendJson(res, 400, { error: 'missing to or text' });
+  }
+
+  const phone = String(to).replace(/\D/g, '');
+  if (!phone) {
+    return sendJson(res, 400, { error: 'invalid phone' });
+  }
+  const chatId = `${phone}@c.us`;
+  const urlWithSession =
+    WAHA_URL.includes('session=') ?
+      WAHA_URL :
+      `${WAHA_URL}${WAHA_URL.includes('?') ? '&' : '?'}session=${encodeURIComponent(WAHA_SESSION)}`;
+
+  const payload = {
+    session: WAHA_SESSION,
+    chatId,
+    text
+  };
+
+  try {
+    const forwarded = await axios.post(urlWithSession, payload, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return sendJson(res, 200, { forwardedStatus: forwarded.status, forwardedData: forwarded.data });
+  } catch (err) {
+    const status = err.response?.status || 500;
+    const data = err.response?.data || { error: err.message };
+    return sendJson(res, status, { error: 'forward_failed', detail: data });
+  }
+}
+
+const server = http.createServer((req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  console.log(`${req.method} ${url.pathname}${url.search || ''}`);
+
+  if (req.method === 'GET' && url.pathname === '/health') {
+    return sendJson(res, 200, { status: 'ok' });
+  }
+
+  if ((req.method === 'GET' || req.method === 'POST') && url.pathname === '/send') {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString('utf8'); });
+    req.on('end', () => {
+      handleSend(req, res, url.searchParams, body);
+    });
+    return;
+  }
+
+  res.statusCode = 404;
+  res.end('Not found');
+});
+
+server.listen(PORT, () => {
+  console.log(`api_message_zabbix listening on port ${PORT}`);
+  console.log(`Forwarding to WAHA at ${WAHA_URL} session=${WAHA_SESSION}`);
+});

@@ -1,0 +1,11 @@
+# Sessões locais do WAHA
+/sessions/
+
+# Arquivos de mídia gerados pelo WAHA
+/media/
+
+# Ambiente persistente do Zabbix (configs, dados, certificados)
+/zbx_env/
+
+# Dependências do Node.js
+/api_message_zabbix/node_modules/
