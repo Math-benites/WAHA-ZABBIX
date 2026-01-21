@@ -72,16 +72,27 @@ return 'OK';
 - Para contatos, continue usando apenas os dígitos (o webhook acrescenta `@c.us`).
 
 ## Testes rapidos
-- Do host:
+- Do host (contato):
 ```bash
 curl -X POST "http://SEU_HOST:4100/send?to=5599999999999&text=teste"
 ```
-- De dentro do container Zabbix server (rede interna):
+- Do host (grupo):
+```bash
+curl -X POST "http://SEU_HOST:4100/send?to=120363393301111563&text=TesteGrupo&group=true"
+```
+- De dentro do container Zabbix server (rede interna, contato):
 ```bash
 docker compose exec zabbix-server \
   curl -X POST "http://api-message-zabbix:3000/send" \
   -H "Content-Type: application/json" \
   -d "{\"to\":\"5599999999999\",\"text\":\"teste\"}"
+```
+- De dentro do container Zabbix server (rede interna, grupo):
+```bash
+docker compose exec zabbix-server \
+  curl -X POST "http://api-message-zabbix:3000/send" \
+  -H "Content-Type: application/json" \
+  -d "{\"to\":\"120363393301111563\",\"text\":\"TesteGrupo\",\"group\":true}"
 ```
 
 ## Problemas comuns
