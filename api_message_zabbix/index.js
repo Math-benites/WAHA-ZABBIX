@@ -23,15 +23,23 @@ async function handleSend(req, res, query, bodyStr) {
 
   let to = (query.get('to') || '').toString();
   let text = (query.get('text') || '').toString();
+  let isGroup = false;
 
   if ((!to || !text) && bodyStr) {
     try {
       const bodyObj = JSON.parse(bodyStr);
       if (!to && bodyObj.to) to = String(bodyObj.to);
       if (!text && bodyObj.text) text = String(bodyObj.text);
+      if (bodyObj.group !== undefined) isGroup = Boolean(bodyObj.group);
     } catch (_) {
       // ignore JSON parse errors
     }
+  }
+
+  if (query.has('group')) {
+    const raw = query.get('group');
+    const val = typeof raw === 'string' ? raw.toLowerCase() : raw;
+    isGroup = val === true || val === 'true' || val === '1' || val === 'yes' || val === 'on';
   }
 
   if (!to || !text) {
@@ -42,7 +50,8 @@ async function handleSend(req, res, query, bodyStr) {
   if (!phone) {
     return sendJson(res, 400, { error: 'invalid phone' });
   }
-  const chatId = `${phone}@c.us`;
+  const suffix = isGroup ? '@g.us' : '@c.us';
+  const chatId = `${phone}${suffix}`;
   const urlWithSession =
     WAHA_URL.includes('session=') ?
       WAHA_URL :

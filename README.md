@@ -41,6 +41,7 @@ docker compose ps
    - to: `{ALERT.SENDTO}`
    - text: `{ALERT.SUBJECT}\n{ALERT.MESSAGE}`
    - api_key: (preencha se `API_KEY` estiver setado)
+   - group: `0` para contato (default), `1` para grupo (apenas quando quiser enviar a grupos)
 4) Script:
 ```javascript
 var params = value;
@@ -48,7 +49,12 @@ if (typeof params === 'string') { try { params = JSON.parse(params); } catch (e)
 var url = params.url || 'http://api-message-zabbix:3000/send';
 var to = (params.to || '').replace(/\D/g, '');
 var text = params.text || '';
-var body = { to: to, text: text };
+var isGroup = false;
+if (params.group !== undefined) {
+  var g = params.group;
+  isGroup = g === true || g === 'true' || g === '1' || g === 1 || g === 'yes';
+}
+var body = { to: to, text: text, group: isGroup };
 var req = new HttpRequest();
 req.addHeader('Content-Type', 'application/json');
 if (params.api_key) { req.addHeader('X-Api-Key', params.api_key); }
@@ -59,6 +65,11 @@ return 'OK';
 ```
 5) Em Users -> Media, adicione o numero (somente digitos) no tipo WAHA WhatsApp.
 6) Amarre em uma Action para os triggers desejados.
+
+### Enviando para grupos
+- No parametro `group`, use `1` (ou `true`) para enviar para grupos; deixe `0` ou vazio para contatos individuais.
+- O campo `to` deve receber o ID do grupo sem o sufixo (`120363393301111563`, por exemplo). O webhook acrescenta `@g.us` automaticamente quando `group` for verdadeiro.
+- Para contatos, continue usando apenas os dígitos (o webhook acrescenta `@c.us`).
 
 ## Testes rapidos
 - Do host:
