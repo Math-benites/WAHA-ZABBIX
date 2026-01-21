@@ -63,6 +63,10 @@ var status = req.getStatus();
 if (status !== 200) { throw 'request failed status=' + status + ' body=' + resp; }
 return 'OK';
 ```
+Exemplo visual da configuracao dos parametros no Media Type:
+
+![Configuracao Media Type WAHA](img/photo1.png)
+
 5) Em Users -> Media, adicione o numero (somente digitos) no tipo WAHA WhatsApp.
 6) Amarre em uma Action para os triggers desejados.
 
