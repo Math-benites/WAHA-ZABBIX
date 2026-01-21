@@ -38,10 +38,10 @@ docker compose ps
 2) Tipo: Webhook. Nome: WAHA WhatsApp.
 3) Parametros:
    - url: `http://api-message-zabbix:3000/send` (host interno do compose)
-   - to: `{ALERT.SENDTO}`
-   - text: `{ALERT.SUBJECT}\n{ALERT.MESSAGE}`
-   - api_key: (preencha se `API_KEY` estiver setado)
+   - to: `{ALERT.SENDTO}` (somente dígitos)
+   - text: `{ALERT.SUBJECT}\n{ALERT.MESSAGE}` (ou apenas `{ALERT.MESSAGE}`)
    - group: `0` para contato (default), `1` para grupo (apenas quando quiser enviar a grupos)
+   - api_key: (preencha se `API_KEY` estiver setado)
 4) Script:
 ```javascript
 var params = value;
@@ -70,6 +70,7 @@ return 'OK';
 - No parametro `group`, use `1` (ou `true`) para enviar para grupos; deixe `0` ou vazio para contatos individuais.
 - O campo `to` deve receber o ID do grupo sem o sufixo (`120363393301111563`, por exemplo). O webhook acrescenta `@g.us` automaticamente quando `group` for verdadeiro.
 - Para contatos, continue usando apenas os dígitos (o webhook acrescenta `@c.us`).
+- No teste de Media Type do Zabbix, certifique-se de que os nomes dos parametros estejam em minusculo: `url`, `to`, `text`, `group`, `api_key` (qualquer capitalizacao diferente faz o script ignorar o valor).
 
 ## Testes rapidos
 - Do host (contato):
