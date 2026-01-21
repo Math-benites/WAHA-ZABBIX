@@ -157,11 +157,8 @@ services:
    com.zabbix.os: "oracle linux"
 
  mysql-server:
-  image: mysql:8.0-oracle
-  command:
-   - mysqld
-   - --character-set-server=utf8mb4
-   - --collation-server=utf8mb4_bin
+ image: mysql:8.0-oracle
+  command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_bin
 # Only during upgrade from versions prior 6.4
 #   - --log_bin_trust_function_creators=1
 # Use TLS encryption for connections to database
