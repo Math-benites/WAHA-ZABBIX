@@ -26,7 +26,7 @@ docker compose ps
 ## Ajustes de variaveis
 - Secrets de banco em `env_vars/.MYSQL_*` e `env_vars/.POSTGRES_*` (um valor por arquivo).
 - Parametros do Zabbix em `env_vars/.env_srv` e `env_vars/.env_web`.
-- Defina `WAHA_API_KEY` (na sua env local ou direto no `docker-compose.yml`) para proteger o WAHA; informe essa chave no Media Type via parametro `waha_api_key` para que o `api_message_zabbix` apenas a repasse (nao precisa setar no servico).
+- Defina `WAHA_API_KEY` (na sua env local ou direto no `docker-compose.yml`) para proteger o WAHA; informe essa chave no Media Type via parametro `waha_api_key` ou `api_key` para que o `api_message_zabbix` repasse. Se nada vier na requisicao, o bridge usa `WAHA_API_KEY_FALLBACK` (ou `WAHA_API_KEY`) como ultimo recurso.
 - Se quiser chave de protecao no webhook, defina `API_KEY` no servico `api-message-zabbix` do `docker-compose.yml` e use o mesmo valor no Media Type (header `X-Api-Key`). Se nao definir, o webhook fica aberto e so repassa as chamadas.
 
 ## Configurar WAHA
@@ -56,7 +56,7 @@ if (params.group !== undefined) {
   var g = params.group;
   isGroup = g === true || g === 'true' || g === '1' || g === 1 || g === 'yes';
 }
-var body = { to: to, text: text, group: isGroup };
+var body = { to: to, text: text, group: isGroup, api_key: params.api_key || '', waha_api_key: params.waha_api_key || '' };
 var req = new HttpRequest();
 req.addHeader('Content-Type', 'application/json');
 if (params.waha_api_key) { req.addHeader('X-WAHA-Api-Key', params.waha_api_key); }
