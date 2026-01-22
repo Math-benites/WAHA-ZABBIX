@@ -26,6 +26,7 @@ docker compose ps
 ## Ajustes de variaveis
 - Secrets de banco em `env_vars/.MYSQL_*` e `env_vars/.POSTGRES_*` (um valor por arquivo).
 - Parametros do Zabbix em `env_vars/.env_srv` e `env_vars/.env_web`.
+- Defina `WAHA_API_KEY` (na sua env local ou direto no `docker-compose.yml`) para proteger o WAHA; o mesmo valor e repassado para o `api_message_zabbix`.
 - Se quiser chave de protecao no webhook, defina `API_KEY` no servico `api-message-zabbix` do `docker-compose.yml` e use o mesmo valor no Media Type (header `X-Api-Key`).
 
 ## Configurar WAHA
@@ -41,6 +42,7 @@ docker compose ps
    - to: `{ALERT.SENDTO}` (somente dígitos)
    - text: `{ALERT.SUBJECT}\n{ALERT.MESSAGE}` (ou apenas `{ALERT.MESSAGE}`)
    - group: `0` para contato (default), `1` para grupo (apenas quando quiser enviar a grupos)
+   - waha_api_key: mesma chave definida em `WAHA_API_KEY` (opcional, mas recomendado)
    - api_key: (preencha se `API_KEY` estiver setado)
 4) Script:
 ```javascript
@@ -57,6 +59,7 @@ if (params.group !== undefined) {
 var body = { to: to, text: text, group: isGroup };
 var req = new HttpRequest();
 req.addHeader('Content-Type', 'application/json');
+if (params.waha_api_key) { req.addHeader('X-WAHA-Api-Key', params.waha_api_key); }
 if (params.api_key) { req.addHeader('X-Api-Key', params.api_key); }
 var resp = req.post(url, JSON.stringify(body));
 var status = req.getStatus();
@@ -103,5 +106,6 @@ docker compose exec zabbix-server \
 ## Problemas comuns
 - Sessao WAHA desconectada: refaca o QR Code em http://SEU_HOST:4000.
 - 401 no webhook: alinhe `API_KEY` entre compose e Media Type.
+- 401 no WAHA: alinhe `WAHA_API_KEY` (env compose) com o parametro `waha_api_key` (Media Type) ou passe no header `X-WAHA-Api-Key`.
 - 5xx no api_message_zabbix: veja logs `docker compose logs -f api-message-zabbix` e confirme que WAHA responde em `http://waha:3000/api/sendText`.
 - Mensagem nao chega: numero com apenas digitos, sem + ou parenteses, e WhatsApp ativo.

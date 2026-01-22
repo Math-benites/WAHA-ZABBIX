@@ -195,10 +195,9 @@ services:
     image: devlikeapro/waha:latest
     platform: linux/amd64
     environment:
-      WHATSAPP_HOOK_URL: http://host.docker.internal:5678/webhook/webhook
       WHATSAPP_DEFAULT_ENGINE: GOWS
       WHATSAPP_HOOK_EVENTS: message
-      WAHA_NO_API_KEY: true
+      WAHA_API_KEY: ${WAHA_API_KEY:-waha-secret}
       WAHA_DASHBOARD_NO_PASSWORD: true
       WHATSAPP_SWAGGER_NO_PASSWORD: true
       WHATSAPP_RESTART_ALL_SESSIONS: "True"
@@ -224,6 +223,7 @@ services:
      PORT: 3000
      WAHA_URL: http://waha:3000/api/sendText
      WAHA_SESSION: default
+     WAHA_API_KEY: ${WAHA_API_KEY:-waha-secret}
      # API_KEY: coloque-um-segredo-opcional
    ports:
      - "4100:3000"

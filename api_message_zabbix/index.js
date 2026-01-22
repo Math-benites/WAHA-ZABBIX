@@ -5,7 +5,8 @@ import axios from 'axios';
 const PORT = process.env.PORT || 3000;
 const WAHA_URL = process.env.WAHA_URL || 'http://waha:3000/api/sendText';
 const WAHA_SESSION = process.env.WAHA_SESSION || 'default';
-const API_KEY = process.env.API_KEY; // optional shared secret
+const WAHA_API_KEY = process.env.WAHA_API_KEY; // forward to WAHA (X-Api-Key)
+const API_KEY = process.env.API_KEY; // optional shared secret for this webhook
 
 function sendJson(res, status, obj) {
   const data = JSON.stringify(obj);
@@ -24,16 +25,20 @@ async function handleSend(req, res, query, bodyStr) {
   let to = (query.get('to') || '').toString();
   let text = (query.get('text') || '').toString();
   let isGroup = false;
+  let bodyObj = null;
 
-  if ((!to || !text) && bodyStr) {
-    try {
-      const bodyObj = JSON.parse(bodyStr);
-      if (!to && bodyObj.to) to = String(bodyObj.to);
-      if (!text && bodyObj.text) text = String(bodyObj.text);
-      if (bodyObj.group !== undefined) isGroup = Boolean(bodyObj.group);
-    } catch (_) {
-      // ignore JSON parse errors
-    }
+  if (bodyStr) {
+    try { bodyObj = JSON.parse(bodyStr); } catch (_) { /* ignore JSON parse errors */ }
+  }
+
+  if (!to && bodyObj?.to) {
+    to = String(bodyObj.to);
+  }
+  if (!text && bodyObj?.text) {
+    text = String(bodyObj.text);
+  }
+  if (bodyObj && bodyObj.group !== undefined) {
+    isGroup = Boolean(bodyObj.group);
   }
 
   if (query.has('group')) {
@@ -62,10 +67,19 @@ async function handleSend(req, res, query, bodyStr) {
     chatId,
     text
   };
+  const wahaApiKeyFromReq =
+    req.headers['x-waha-api-key'] ||
+    query.get('waha_api_key') ||
+    (bodyObj && (bodyObj.waha_api_key || bodyObj.wahaApiKey)) ||
+    WAHA_API_KEY;
+  const forwardHeaders = { 'Content-Type': 'application/json' };
+  if (wahaApiKeyFromReq) {
+    forwardHeaders['X-Api-Key'] = wahaApiKeyFromReq;
+  }
 
   try {
     const forwarded = await axios.post(urlWithSession, payload, {
-      headers: { 'Content-Type': 'application/json' }
+      headers: forwardHeaders
     });
     return sendJson(res, 200, { forwardedStatus: forwarded.status, forwardedData: forwarded.data });
   } catch (err) {
