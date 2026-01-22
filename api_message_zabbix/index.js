@@ -14,9 +14,13 @@ function sendJson(res, status, obj) {
 }
 
 async function handleSend(req, res, query, bodyStr) {
+  const clientApiKey =
+    req.headers['x-api-key'] ||
+    query.get('api_key') ||
+    (bodyStr ? (() => { try { return (JSON.parse(bodyStr)).api_key; } catch (_) { return undefined; } })() : undefined);
+
   if (API_KEY) {
-    const hdr = req.headers['x-api-key'];
-    if (!hdr || hdr !== API_KEY) {
+    if (!clientApiKey || clientApiKey !== API_KEY) {
       return sendJson(res, 401, { error: 'unauthorized' });
     }
   }
@@ -69,7 +73,8 @@ async function handleSend(req, res, query, bodyStr) {
   const wahaApiKeyFromReq =
     req.headers['x-waha-api-key'] ||
     query.get('waha_api_key') ||
-    (bodyObj && (bodyObj.waha_api_key || bodyObj.wahaApiKey));
+    (bodyObj && (bodyObj.waha_api_key || bodyObj.wahaApiKey)) ||
+    (!API_KEY ? clientApiKey : undefined); // fallback: reuse api_key when webhook não está protegido
   const forwardHeaders = { 'Content-Type': 'application/json' };
   if (wahaApiKeyFromReq) {
     forwardHeaders['X-Api-Key'] = wahaApiKeyFromReq;
