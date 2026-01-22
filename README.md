@@ -26,8 +26,8 @@ docker compose ps
 ## Ajustes de variaveis
 - Secrets de banco em `env_vars/.MYSQL_*` e `env_vars/.POSTGRES_*` (um valor por arquivo).
 - Parametros do Zabbix em `env_vars/.env_srv` e `env_vars/.env_web`.
-- Defina `WAHA_API_KEY` (na sua env local ou direto no `docker-compose.yml`) para proteger o WAHA; o mesmo valor e repassado para o `api_message_zabbix`.
-- Se quiser chave de protecao no webhook, defina `API_KEY` no servico `api-message-zabbix` do `docker-compose.yml` e use o mesmo valor no Media Type (header `X-Api-Key`).
+- Defina `WAHA_API_KEY` (na sua env local ou direto no `docker-compose.yml`) para proteger o WAHA; informe essa chave no Media Type via parametro `waha_api_key` para que o `api_message_zabbix` apenas a repasse (nao precisa setar no servico).
+- Se quiser chave de protecao no webhook, defina `API_KEY` no servico `api-message-zabbix` do `docker-compose.yml` e use o mesmo valor no Media Type (header `X-Api-Key`). Se nao definir, o webhook fica aberto e so repassa as chamadas.
 
 ## Configurar WAHA
 1) Acesse http://SEU_HOST:4000.

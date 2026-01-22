@@ -5,7 +5,6 @@ import axios from 'axios';
 const PORT = process.env.PORT || 3000;
 const WAHA_URL = process.env.WAHA_URL || 'http://waha:3000/api/sendText';
 const WAHA_SESSION = process.env.WAHA_SESSION || 'default';
-const WAHA_API_KEY = process.env.WAHA_API_KEY; // forward to WAHA (X-Api-Key)
 const API_KEY = process.env.API_KEY; // optional shared secret for this webhook
 
 function sendJson(res, status, obj) {
@@ -70,8 +69,7 @@ async function handleSend(req, res, query, bodyStr) {
   const wahaApiKeyFromReq =
     req.headers['x-waha-api-key'] ||
     query.get('waha_api_key') ||
-    (bodyObj && (bodyObj.waha_api_key || bodyObj.wahaApiKey)) ||
-    WAHA_API_KEY;
+    (bodyObj && (bodyObj.waha_api_key || bodyObj.wahaApiKey));
   const forwardHeaders = { 'Content-Type': 'application/json' };
   if (wahaApiKeyFromReq) {
     forwardHeaders['X-Api-Key'] = wahaApiKeyFromReq;
