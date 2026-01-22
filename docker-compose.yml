@@ -191,32 +191,6 @@ services:
   volumes:
    - ./zbx_env/var/lib/mysql:/var/lib/mysql:rw
 
- redis:
-  image: redis:latest
-  platform: linux/amd64
-  command: redis-server --requirepass default
-  environment:
-   REDIS_USER: default
-   REDIS_PASSWORD: default
-  ports:
-   - "6379:6379"
-  networks:
-   zbx_net_frontend:
-
- postgres:
-  image: postgres:latest
-  platform: linux/amd64
-  environment:
-   POSTGRES_USER: default
-   POSTGRES_PASSWORD: default
-   POSTGRES_DB: default
-  ports:
-   - "5432:5432"
-  volumes:
-   - pgdata:/var/lib/postgresql/data
-  networks:
-    zbx_net_frontend:
-
  waha:
     image: devlikeapro/waha:latest
     platform: linux/amd64
@@ -227,6 +201,10 @@ services:
       WAHA_NO_API_KEY: true
       WAHA_DASHBOARD_NO_PASSWORD: true
       WHATSAPP_SWAGGER_NO_PASSWORD: true
+      WHATSAPP_RESTART_ALL_SESSIONS: "True"
+      WHATSAPP_START_SESSION: default
+      # Delay between automatic session starts (seconds); tune if many sessions
+      WAHA_AUTO_START_DELAY_SECONDS: 3
     volumes:
       - waha_sessions:/app/.sessions
       - waha_media:/app/.media
