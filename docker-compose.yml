@@ -194,16 +194,8 @@ services:
  waha:
     image: devlikeapro/waha:latest
     platform: linux/amd64
-    environment:
-      WHATSAPP_DEFAULT_ENGINE: GOWS
-      WHATSAPP_HOOK_EVENTS: message
-      WAHA_API_KEY: ${WAHA_API_KEY:-waha-secret}
-      WAHA_DASHBOARD_NO_PASSWORD: true
-      WHATSAPP_SWAGGER_NO_PASSWORD: true
-      WHATSAPP_RESTART_ALL_SESSIONS: "True"
-      WHATSAPP_START_SESSION: default
-      # Delay between automatic session starts (seconds); tune if many sessions
-      WAHA_AUTO_START_DELAY_SECONDS: 3
+    env_file:
+      - .env_WAHA
     volumes:
       - waha_sessions:/app/.sessions
       - waha_media:/app/.media
@@ -219,12 +211,8 @@ services:
    volumes:
      - ./api_message_zabbix:/app
    command: sh -c "npm install --production && node index.js"
-   environment:
-     PORT: 3000
-     WAHA_URL: http://waha:3000/api/sendText
-     WAHA_SESSION: default
-     WAHA_API_KEY: ${WAHA_API_KEY:-waha-secret}
-     # API_KEY: coloque-um-segredo-opcional
+   env_file:
+     - .env_API_MESSAGE_ZABBIX
    ports:
      - "4100:3000"
    depends_on:
