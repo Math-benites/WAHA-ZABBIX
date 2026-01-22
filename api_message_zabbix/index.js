@@ -1,7 +1,5 @@
 import http from 'http';
 import { URL } from 'url';
-import path from 'path';
-import fs from 'fs';
 import axios from 'axios';
 
 const PORT = process.env.PORT || 3000;
@@ -9,15 +7,6 @@ const WAHA_URL = process.env.WAHA_URL || 'http://waha:3000/api/sendText';
 const WAHA_SESSION = process.env.WAHA_SESSION || 'default';
 const API_KEY = process.env.API_KEY; // optional shared secret for this webhook
 const WAHA_API_KEY_FALLBACK = process.env.WAHA_API_KEY_FALLBACK || process.env.WAHA_API_KEY;
-const DEBUG_LOG = process.env.DEBUG_LOG || 'debuglog.log';
-const debugLogPath = path.resolve(DEBUG_LOG);
-
-function logDebug(event, data) {
-  const line = `${new Date().toISOString()} ${event} ${JSON.stringify(data)}\n`;
-  fs.promises.appendFile(debugLogPath, line).catch(err => {
-    console.error('debug log write failed', err);
-  });
-}
 
 function sendJson(res, status, obj) {
   const data = JSON.stringify(obj);
@@ -32,13 +21,6 @@ async function handleSend(req, res, query, bodyStr) {
   } else {
     console.log('incoming body is empty');
   }
-  logDebug('incoming', {
-    method: req.method,
-    url: req.url,
-    headers: req.headers,
-    query: Object.fromEntries(query.entries()),
-    body: bodyStr
-  });
   const contentType = (req.headers['content-type'] || '').toLowerCase();
   let formParams = null;
   if (bodyStr && contentType.includes('application/x-www-form-urlencoded')) {
@@ -131,11 +113,6 @@ async function handleSend(req, res, query, bodyStr) {
     forwardHeaders['X-Api-Key'] = wahaApiKeyFromReq;
   }
   console.log('forwarding to WAHA', { url: urlWithSession, hasApiKey: Boolean(wahaApiKeyFromReq) });
-  logDebug('forwarding', {
-    url: urlWithSession,
-    headers: forwardHeaders,
-    payload
-  });
 
   try {
     const forwarded = await axios.post(urlWithSession, payload, {
